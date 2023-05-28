@@ -1,9 +1,74 @@
+import { useState,useRef,useEffect, useReducer } from "react";
+
+//reducer function--depending upon what type of action is performed depending on it we will return the next state
+//like it it is ADD then we will return the next state which wil add the blogs to the blogs array if it is REMOVE then remove it from blog array
+function blogsReducer(state,action){
+    switch(action.type){
+        case "ADD":
+            return [action.blog,...state]  //if type is coming from action the blog will also come from action
+
+        case "REMOVE":
+            return state.filter((blog,index) => index!==action.index) //index!==action.index only that blog will be left out means if condition is true put it inside new filtered array
+
+        default:
+            return [];
+    }
+}
+
 //Blogging App using Hooks
 export default function Blog(){
+
+    // const[title,setTitle] = useState("");
+    // const[content,setContent] = useState("");
+
+    const[formData, setFormData] = useState({title:"",content:""})
+
+    //empty array(for now) for holding content and title when we submit it
+    //const[blogs,setBlogs] = useState([]); //INITIALLY our blogs are empty
+
+    const [blogs,dispatch] = useReducer(blogsReducer, []);
+    const titleRef = useRef(null); 
+
+    useEffect(()=>{
+        titleRef.current.focus();
+    },[])
+
+    useEffect(() =>{
+        if(blogs.length && blogs[0].title){
+            document.title = blogs[0].title;
+        }
+        else{
+            document.title = "No Blogs!!"
+        }
+    },[blogs])
     
     //Passing the synthetic event as argument to stop refreshing the page on submit
     function handleSubmit(e){
         e.preventDefault();
+
+        //now we can fetch everything data from the blog and actually map it using map function and display it on screen
+        //setBlogs([{title: formData.title,content: formData.content},...blogs]);  //whatever is there already in blog after current title and current content it will give everything from blogs array
+        
+        dispatch({type:"ADD",blog:{title: formData.title,content: formData.content}})
+
+
+        setFormData({title:"",content: ""});
+        // setTitle("");
+        // setContent("");
+
+        titleRef.current.focus(); //title ref is assigned to input field that have title in it
+
+    }
+
+    function removeBlog(i){
+
+        //we will filter out all those blogs whose index number doesnt match with deleted blog
+
+        //setBlogs(blogs.filter((blog,index)=> i!==index));
+
+        //replacing setblogs with dispatch function
+        dispatch({type: "REMOVE", index: i})
+
     }
 
     return(
@@ -20,13 +85,22 @@ export default function Blog(){
                 {/* Row component to create a row for first input field */}
                 <Row label="Title">
                         <input className="input"
-                                placeholder="Enter the Title of the Blog here.."/>
+                                placeholder="Enter the Title of the Blog here.."
+                                value ={formData.title}
+                                ref = {titleRef}
+                                onChange={(e)=> setFormData({title:e.target.value, content:formData.content})} 
+                                //we need to mention the keys even though they are not getting updated at this instance because it is an object and we need to update the whole object
+                            />
                 </Row >
 
                 {/* Row component to create a row for Text area field */}
                 <Row label="Content">
                         <textarea className="input content"
-                                placeholder="Content of the Blog goes here.."/>
+                                placeholder="Content of the Blog goes here.."
+                                value= {formData.content}
+                                required
+                                onChange={(e)=> setFormData({title: formData.title, content: e.target.value})}
+                            />
                 </Row >
 
                 {/* Button to submit the blog */}            
@@ -38,7 +112,21 @@ export default function Blog(){
         <hr/>
 
         {/* Section where submitted blogs will be displayed */}
+
         <h2> Blogs </h2>
+            {blogs.map((blog,i) =>(
+                <div className="blog" key={i}>
+                    <h3>{blog.title}</h3>
+                    <p>{blog.content}</p>
+
+                    <div className="blog-btn">
+                        <button onClick={()=> removeBlog(i)}
+                        className="btn remove">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            ))}
         
         </>
         )
